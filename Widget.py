@@ -17,7 +17,7 @@ class PfamWidget(QWidget):
         # Constant
         self.y_scale_position = 150
         self.y_position = 80 # Valeur entre 25 et 95
-        self.height_ind = self.y_position -20 # Permet une y_position des points fxes
+        self.height_ind = self.y_position - 20 # Permet une y_position des points fxes
 
         # Load
         self.load()
@@ -30,15 +30,14 @@ class PfamWidget(QWidget):
         self.mutation = [["mutation_1", 115],["mutation_2", 68]]
         self.proteins = [["proteins",255]]
         self.silents = [["silent", 167]]
-        self.index = [self.mutation, self.silents, self.proteins]
+        self.index = [self.mutation, self.silents, self.proteins] # liste des index groupés
         self.full_index = [] # liste des index non groupés
         for list_ind in self.index :
             for ind in list_ind:
                 self.full_index.append(ind)
 
         self.list_labels = [] 
-        for list_ind in self.index:
-            for ind in list_ind:
+        for ind in self.full_index:
                 self.list_labels.append(QLabel(str(ind[0])))
 
         # Color Index
@@ -168,8 +167,7 @@ class PfamWidget(QWidget):
         painter.drawEllipse(position-2,self.y_position-self.height_ind,5,5)
         painter.setPen(QPen("dark"))
         
-    
-    def addIndex(self,name,position,color_given):
+    def addIndex(self,name,position,color_given, height = 60):
         groupe = None
         for i, color in enumerate(self.colors):
             if color == color_given:
@@ -182,9 +180,11 @@ class PfamWidget(QWidget):
         label = QLabel(name)
         label.setHidden(True)
         self.list_labels.append(label)
-        print(self.list_labels)
         self.layout1.addWidget(label)
+        if (height < 80) and ( height > 10):
+            self.height_ind = height 
         self.update()
+        
 
     def mouseMoveEvent(self, event: PySide2.QtGui.QMouseEvent) -> None:
         self.cursor.setLine(event.x(),self.y_scale_position, event.x(), 80)
@@ -221,8 +221,8 @@ class PfamWidget(QWidget):
             return None
     
     def load(self):
-        # self.data = self.get_pfam_from_name(self.prot_name)
-        self.data = json.load(open("graphic.json"))
+        self.data = self.get_pfam_from_name(self.prot_name)
+        # self.data = json.load(open("graphic.json"))
         self.values =[]
         for i in self.data[0]["regions"]:
             self.values.append([i["start"],i["end"],i["colour"], i["text"]])
@@ -246,6 +246,13 @@ class PfamWidget(QWidget):
         print(response.decode('utf-8'))
         return None
     
+    def add_Groupe(self, name, color):
+        self.group.append(name)
+        self.colors.append(color)
+        self.index.append([])
+        self.update()
+
+    
         
 if __name__ == '__main__' :
 
@@ -253,6 +260,7 @@ if __name__ == '__main__' :
     app = QApplication(sys.argv)
     widget = PfamWidget("EGFR_HUMAN")
     # widget.setWindowTitle("hello")
-    widget.addIndex("added", 300, widget.colors[1])
+    widget.add_Groupe("New Groupe", Qt.darkBlue)
+    widget.addIndex("added", 300, widget.colors[-1], 20)
     # widget.Mapping_gene2prot('ACC+ID', 'ENSEMBL_ID', 'P40925 P40926 O43175 Q9UM73 P97793', 'tab')
     app.exec_()
