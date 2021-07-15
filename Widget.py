@@ -24,16 +24,6 @@ class PfamWidget(QWidget):
         self.y_position = 100  # Value betwenn 25 and 90
         self.y_height = 70  # height of the PFAM
         self.scaling = 2  # protein to pixel
-        self.colors = [
-            "#ABC8E2",
-            "#375D81",
-            "#C4FCCA",
-            "#FFE6C9",
-            "#E8CC06",
-            "#1D702D",
-            "#C9001A",
-            "#495CFF",
-        ]
 
         # Load
         self.load(prot_name)
@@ -320,14 +310,12 @@ class PfamWidget(QWidget):
         self.data = json.load(open("graphic.json"))
         self.domains = []
         for data in self.data[0]["regions"]:
-            ind = random.randint(0, len(self.colors) - 1)
-            print(ind)
             self.domains.append(
                 {
                     "name": data["text"],
                     "start": data["start"],
                     "end": data["end"],
-                    "color": self.colors[ind],
+                    "color": data["colour"],
                 }
             )
         print(self.domains)
