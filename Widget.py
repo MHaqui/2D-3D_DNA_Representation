@@ -6,64 +6,65 @@ import urllib.request
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
 from PySide2.QtCore import *
+import random
 
 
 class PfamWidget(QWidget):
     """Widget display PFAM"""
 
-    def __init__(self, prot_name: str, parent=None):
+    def __init__(self, prot_name: str, parent=None) -> None:
+        """init variables and parameter
+
+        Args:
+            prot_name (str): protein name to load
+        """
         super().__init__()
 
-        # Init
-
         # Constant
-        self.y_scale_position = 150
-        self.y_position = 80  # Value betwenn 25 and 90
-        self.height_ind = 60
+        self.y_position = 100  # Value betwenn 25 and 90
+        self.y_height = 70  # height of the PFAM
+        self.scaling = 2  # protein to pixel
+        self.colors = [
+            "#ABC8E2",
+            "#375D81",
+            "#C4FCCA",
+            "#FFE6C9",
+            "#E8CC06",
+            "#1D702D",
+            "#C9001A",
+            "#495CFF",
+        ]
 
         # Load
         self.load(prot_name)
 
-        # Object
-        self.cursor = QLine(0, self.y_scale_position, 0, 80)
-
         # Data index
         self.variants = [
             {"name": "G32X", "position": 150, "height": 60, "color": "red"},
-            {"name": "G32X", "position": 50, "height": 60, "color": "green"},
-            {"name": "G32X", "position": 250, "height": 60, "color": "blue"},
+            {"name": "G31X", "position": 50, "height": 60, "color": "green"},
+            {"name": "G30X", "position": 250, "height": 60, "color": "blue"},
         ]
+
+        # Data group
         self.groups = [
             {
                 "name": "Mutation",
                 "color": "red",
             }
         ]
-        # self.index = []  # list grouped index
-        # self.full_index = []  # list ungrouped index
-        # self.colors = []
-        # self.list_labels = []
-
-        # Layout
-        # self.layout1 = QHBoxLayout()
-        # self.setLayout(self.layout1)
-
-        # Add object
 
         # Parameter
         self.resize(600, 250)
         self.setMouseTracking(True)
-
-        # Scrolbar
 
     def paintEvent(self, event: QPaintEvent):
         """Override"""
         # QPainter
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
+        # painter.setBrush(QColor(self.color[4]))
+        # painter.drawRect(QRect(QPoint(15, 15), QSize(50, 50)))
 
-        # Paint Cursor
-        font_metrics = QFontMetrics(painter.font())
         # Legend
         x_legend = self.rect().left()
         y_legend = self.rect().bottom()
@@ -78,76 +79,84 @@ class PfamWidget(QWidget):
         # Painting region
         start = 0
         end = self.data[0]["length"]
-        for value in self.values:
+        for domain in self.domains:
             painter.setPen(QPen(Qt.black))
             painter.setBrush(QBrush(Qt.gray))
             painter.drawRect(
-                self.rect().adjusted(
-                    self.protein_to_pixel(start),
-                    self.y_position,
-                    self.protein_to_pixel(value[0]) - self.width(),
-                    -self.y_position,
+                QRect(
+                    QPoint(self.protein_to_pixel(start), self.y_position),
+                    QSize(
+                        self.protein_to_pixel(domain["start"] - start), self.y_height
+                    ),
                 )
             )
-            start = value[1]
-            painter.setBrush(QBrush(QColor(value[2])))
-            self.domaine = self.rect().adjusted(
-                self.protein_to_pixel(value[0]),
-                self.y_position,
-                self.protein_to_pixel(value[1]) - self.width(),
-                -self.y_position,
-            )
-            painter.drawRect(self.domaine)
+            painter.setBrush(QBrush(QColor(domain["color"])))
+            region = self.domain_to_QRect(domain)
+            painter.drawRect(region)
             painter.setPen(QPen(Qt.black))
             font = QFont()
             font.setPixelSize(10)
             painter.setFont(font)
-            painter.drawText(
-                self.domaine, Qt.AlignCenter, self.protein_to_pixel(value[3])
-            )
+            painter.drawText(region, Qt.AlignCenter, domain["name"])
+            start = domain["end"]
         painter.setBrush(QBrush(Qt.gray))
         painter.drawRect(
-            self.rect().adjusted(
-                self.protein_to_pixel(start),
-                self.y_position,
-                self.protein_to_pixel(end) - self.width(),
-                -self.y_position,
+            QRect(
+                QPoint(self.protein_to_pixel(start), self.y_position),
+                QSize(
+                    self.protein_to_pixel(end - start),
+                    self.y_height,
+                ),
             )
         )
 
         # Scale painted
+        self.y_scale_position = self.rect().bottom() - 50
         y_scale_height = 15
-        painter.setPen(QPen(Qt.gray))
-        line = QLine(0, self.y_scale_position, end, self.y_scale_position)
-        painter.drawLine(line)
         index = 0
+        painter.setPen(QPen(Qt.gray))
+        line = QLine(
+            self.protein_to_pixel(0),
+            self.y_scale_position,
+            self.protein_to_pixel(end),
+            self.y_scale_position,
+        )
+        painter.drawLine(line)
         while index < end - 20:
             index += 20
             painter.drawLine(
                 QLine(
-                    index,
+                    self.protein_to_pixel(index),
                     self.y_scale_position,
-                    index,
-                    self.y_scale_position - y_scale_height + 5,
+                    self.protein_to_pixel(index),
+                    self.y_scale_position - y_scale_height + 10,
                 )
             )
             if index % 100 == 0:
                 painter.drawLine(
                     QLine(
-                        index,
+                        self.protein_to_pixel(index),
                         self.y_scale_position,
-                        index,
+                        self.protein_to_pixel(index),
                         self.y_scale_position - y_scale_height,
                     )
                 )
                 painter.drawText(
-                    index - 10,
+                    self.protein_to_pixel(index - 5),
                     self.y_scale_position + 10,
                     30,
                     10,
                     Qt.AlignLeft,
                     str(index),
                 )
+            painter.drawText(
+                self.protein_to_pixel(end - 5),
+                self.y_scale_position + 10,
+                30,
+                10,
+                Qt.AlignLeft,
+                str(end),
+            )
 
         # Add index
         for variant in self.variants:
@@ -159,7 +168,7 @@ class PfamWidget(QWidget):
             )
 
     # Fonctions
-    def add_group(self, name: str, color: str):
+    def add_group(self, name: str, color: str) -> None:
         """add a new group legend
 
         Args:
@@ -174,55 +183,130 @@ class PfamWidget(QWidget):
         )
         self.update()
 
-    def add_index(self, name, position, color_given, height=60):
-        groupe = None
+    def add_index(
+        self, name: str, position: int, color_given: str, height: int = 60
+    ) -> None:
+        """add a new index to the dictionnary
+
+        Args:
+            name (str): index name
+            position (int): index position
+            color_given (str): color to print the index
+            height (int, optional): index height. Defaults to 60.
+        """
         self.variants.append(
             {"name": name, "position": position, "height": height, "color": color_given}
         )
 
-    def paint_index(self, position, height, color):
-        # paint an index
+    def paint_index(self, position: int, height: int, color: str) -> None:
+        """paint an index in the PFAM
+
+        Args:
+            position (int): index position
+            height (int): index height
+            color (str): index color to print
+        """
+        position = self.protein_to_pixel(position)
         painter = QPainter(self)
-        painter.setPen(QPen(color))
-        painter.setBrush(QBrush(color))
+        painter.setPen(QPen(QColor(color)))
+        painter.setBrush(QBrush(QColor(color)))
         painter.drawLine(
             QLine(position, self.y_position, position, self.y_position - height)
         )
         painter.drawEllipse(position - 2, self.y_position - height, 5, 5)
-        painter.setPen(QPen("dark"))
 
-    def distance(self, x1, y1, x2, y2):
+    def distance(self, x1: float, y1: float, x2: float, y2: float) -> float:
+        """square distances between 2 points (x1,y1) and (x2,y2)
+
+        Args:
+            x1 (float): x-axis of the first pointin pixel
+            y1 (float): y-axis of the first point in pixel
+            x2 (float): x-axis of the second point in pixel
+            y2 (float): y-axis of the second point in pixel
+
+        Returns:
+            [float]: distances
+        """
         # square distances between 2 points (x1,y1), (x2,y2)
         return (x1 - x2) ** 2 + (y1 - y2) ** 2
 
-    # def mouseMoveEvent(self, event: QMouseEvent) -> None:
-    #     # move the cursor
-    #     self.cursor.setLine(event.x(), self.y_scale_position, event.x(), 80)
-    #     self.update()
-    def protein_to_pixel(self, value):
-        return value * 0.5
+    def protein_to_pixel(self, value: float) -> float:
+        """transform protein coord into pixel coord
 
-    def pixel_to_protein(self, value):
-        return value * 2
+        Args:
+            value (float): scaling value
+
+        Returns:
+            [float]: pixel coord
+        """
+        return value * self.scaling
+
+    def pixel_to_protein(self, value: float) -> float:
+        """transform pixel coord into protein coord
+
+        Args:
+            value (float): scaling value
+
+        Returns:
+            float: protein coord
+        """
+        if self.scaling != 0:
+            return value * 1 / self.scaling
+
+    def domain_to_QRect(self, domain: dict) -> QRect:
+        """create QRect from a dictionary with start and end point
+
+        Args:
+            domain (dict): domain with starting point and ending point
+
+        Returns:
+            QRect: Rect to draw
+        """
+        return QRect(
+            QPoint(self.protein_to_pixel(domain["start"]), self.y_position),
+            QSize(
+                self.protein_to_pixel(domain["end"] - domain["start"]),
+                self.y_height,
+            ),
+        )
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        # paint index name in the template
-        for i, ind in enumerate(self.full_index):
-            if (
-                self.distance(event.x(), event.y(), ind[1], self.y_position - ind[2])
-                < 10
-            ):
-                self.layout1.setContentsMargins(
-                    QMargins(ind[1] - 15, 0, 0, 120 + ind[2])
-                )
-                print(self.list_labels[i])
-                self.list_labels[i].setHidden(False)
-                print(ind[0])
-            else:
-                self.list_labels[i].setHidden(True)
+        """event to show more information on click about index and domain
 
-    def get_pfam(self, name_prot):
-        # get json file thanks protein name or protein id
+        Args:
+            event (QMouseEvent): Press event
+        """
+        # Print more information about index
+        for variant in self.variants:
+            if (
+                self.distance(
+                    event.x(),
+                    event.y(),
+                    self.protein_to_pixel(variant["position"]),
+                    self.y_position - variant["height"],
+                )
+                < 10
+                and event.button() == Qt.LeftButton
+            ):
+                QToolTip.showText(
+                    event.globalPos(),
+                    variant["name"] + "   position : " + str(variant["position"]),
+                )
+
+        # Print more information about domain
+        for domain in self.domains:
+            if self.domain_to_QRect(domain).contains(event.x(), event.y(), False):
+                QToolTip.showText(event.globalPos(), domain["name"])
+
+    def get_pfam(self, name_prot: str) -> json:
+        """get the json from the prot_name in the pfam database
+
+        Args:
+            name_prot (str): protein name
+
+        Returns:
+            json: json to extract
+        """
         r = requests.get(f"https://pfam.xfam.org/protein/" + name_prot + "/graphic")
         if r.status_code == 200:
             return r.json()
@@ -230,17 +314,36 @@ class PfamWidget(QWidget):
             print("Echec request")
             return None
 
-    def load(self, prot_name):
-        # load json data
+    def load(self, prot_name) -> None:
         """load PFAM from protein or ID"""
-        self.data = self.get_pfam(prot_name)
-        # self.data = json.load(open("graphic.json"))
-        self.values = []
-        for i in self.data[0]["regions"]:
-            self.values.append([i["start"], i["end"], i["colour"], i["text"]])
+        # self.data = self.get_pfam(prot_name)
+        self.data = json.load(open("graphic.json"))
+        self.domains = []
+        for data in self.data[0]["regions"]:
+            ind = random.randint(0, len(self.colors) - 1)
+            print(ind)
+            self.domains.append(
+                {
+                    "name": data["text"],
+                    "start": data["start"],
+                    "end": data["end"],
+                    "color": self.colors[ind],
+                }
+            )
+        print(self.domains)
         print("end_loading")
 
-    def gene_to_protein(self, fromf, to, query, format="tab"):
+    def gene_to_protein(
+        self, fromf: str, to: str, query: str, format: str = "tab"
+    ) -> None:
+        """transcript data form one database to others
+
+        Args:
+            fromf (str): initial database
+            to (str): target database
+            query (str): name to transcript
+            format (str, optional): [description]. Defaults to "tab".
+        """
         # Permet l'extraction des noms des protéines
         # DOC :https://www.uniprot.org/help/api_idmapping
         url = "https://www.uniprot.org/uploadlists/"
