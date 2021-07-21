@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+</head>
+
+<body>
+    <script src="https://cdn.rawgit.com/arose/ngl/v0.10.4-1/dist/ngl.js"></script>
+    VERS
+    <script src="ngl.js"></script>
+    <script>
+        var schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+            [0xFF0000, "*"]], "Transmembrane 3dqb");</script>
+    <script>
+        var schemeId2 = NGL.ColormakerRegistry.addScheme(function (params) {
+            this.atomColor = function (atom) {
+                atom.mode = "hsv";
+                atom.mode = (150, 0.15, 0.15)
+                return 0xFF0050;  // blue
+
+            }
+        }
+        );</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var stage = new NGL.Stage("viewport");
+            stage.loadFile("rcsb://1crn").then(function (o) {
+                o.addRepresentation("ball+stick", { colorScheme: "atomindex" });
+                o.autoView();
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var stage = new NGL.Stage("viewport");
+            function defaultStructureRepresentation(component) {
+                // bail out if the component does not contain a structure
+                if (component.type !== "structure") return;
+                // add three representations
+                // component.addRepresentation("cartoon", {
+                //     aspectRatio: 3.0,
+                //     scale: 1.5
+                // });
+                component.addRepresentation("spacefill", {
+                    sele: "all",
+                    scale: 0.1,
+                    colorScheme: "atomindex",
+                });
+                component.addRepresentation("spacefill", {
+                    sele: "acidic",
+                    scale: 0.5
+                });
+                component.addRepresentation("spacefill", {
+                    sele: "[ALA]",
+                    scale: 1,
+                    color: schemeId2,
+                });
+            };
+            stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation);
+        });
+    </script>
+    <div id="viewport" style="width:400px; height:300px;"></div>
+</body>
+
+</html>
+
+<!-- 
+atomindex groupe par sous chaînes
+bfactor hiérarchie
+chainid  uniform
+chainindex uniform
+chainname uniform
+densityfit uniform
+electrostatic Error
+element color element with one different color
+entityindex uniform
+entitytype uniform
+geoquality uniform
+hydrophobicity do the job
+modelindex uniform
+moleculetype uniform
+occupancy uniform
+random work
+residueindex same as atomindex
+resname work but different
+sstruc work but dont understand
+uniform work
+value error
+volume error -->
