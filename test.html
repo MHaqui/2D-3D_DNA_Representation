@@ -7,60 +7,195 @@
 
 <body>
     <script src="https://cdn.rawgit.com/arose/ngl/v0.10.4-1/dist/ngl.js"></script>
-    VERS
-    <script src="ngl.js"></script>
-    <script>
-        var schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-            [0xFF0000, "*"]], "Transmembrane 3dqb");</script>
-    <script>
-        var schemeId2 = NGL.ColormakerRegistry.addScheme(function (params) {
-            this.atomColor = function (atom) {
-                atom.mode = "hsv";
-                atom.mode = (150, 0.15, 0.15)
-                return 0xFF0050;  // blue
+    <!-- <script src="ngl.js "> </script> -->
 
-            }
+    <script>
+
+        // Scheme used
+        var schemeId = NGL.ColormakerRegistry.addSelectionScheme([
+            [0xFF0000, "*"]], "Transmembrane 3dqb");
+        var schemeId1 = NGL.ColormakerRegistry.addSelectionScheme([
+            [0x0000FF, "*"]], "green");
+
+        // Variables
+        this.position = "1"
+
+        // Fonctions
+        function choose_position(value) {
+
+            this.position = value
         }
-        );</script>
-    <script>
+
+        function createElement(name, properties, style) {
+            var el = document.createElement(name)
+            Object.assign(el, properties)
+            Object.assign(el.style, style)
+            return el
+        }
+
+        function addElement(el, stage) {
+            Object.assign(el.style, {
+                position: "absolute",
+                zIndex: 10
+            })
+            stage.viewer.container.appendChild(el)
+        }
+
+        function createSelect(options, properties, style) {
+            var select = createElement("select", properties, style)
+            options.forEach(function (d) {
+                select.add(createElement("option", {
+                    value: d[0], text: d[1]
+                }))
+            })
+            return select
+        }
+
+        function createFileButton(label, properties, style, stage) {
+            var input = createElement("input", Object.assign({
+                type: "file"
+            }, properties), { display: "none" })
+            addElement(input, stage)
+            var button = createElement("input", {
+                value: label,
+                type: "button",
+                onclick: function () { input.click() }
+            }, style)
+            return button
+        }
+
+        function loadStructure(input, stage) {
+            stage.removeAllComponents()
+            return stage.loadFile(input).then(function (o) {
+                // o.autoView(this.position)
+                o.addRepresentation(polymerSelect.value, {
+                    sele: "polymer",
+                    name: "polymer",
+                })
+            })
+        }
+        //  constructor
         document.addEventListener("DOMContentLoaded", function () {
             var stage = new NGL.Stage("viewport");
-            stage.loadFile("rcsb://1crn").then(function (o) {
-                o.addRepresentation("ball+stick", { colorScheme: "atomindex" });
-                o.autoView();
-            });
-        });
-    </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var stage = new NGL.Stage("viewport");
-            function defaultStructureRepresentation(component) {
+
+            var selectAAtext = createElement("span", {
+                innerText: "select position",
+                title: " to load"
+            }, { top: "20px", left: "12px", color: "lightgrey" })
+            addElement(selectAAtext, stage)
+
+            var AAselect = createSelect([
+                ["1", "1"],
+                ["2", "2"],
+                ["3", "3"],
+
+            ], {
+                onchange: function (e) {
+                    choose_position(e.target.value)
+                    stage.removeAllComponents()
+                    stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation)
+                }
+            }, { top: "36px", left: "12px" })
+            addElement(AAselect, stage)
+
+            var loadEdmapText = createElement("span", {
+                innerText: "choose position",
+                title: " to load"
+            }, { top: "330px", left: "12px", color: "lightgrey" })
+            addElement(loadEdmapText, stage)
+
+            var loadEdmapInput = createElement("input", {
+                type: "text",
+                title: "press enter to load",
+                onchange: function (e) {
+                    var value = e.target.value
+                    if (value != "") {
+                        choose_position(e.target.value)
+                        stage.removeAllComponents()
+                        stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation)
+                    }
+                }
+            }, { top: "350px", left: "12px", width: "120px" })
+            addElement(loadEdmapInput, stage)
+
+            var centerButton = createElement("input", {
+                type: "button",
+                value: "center",
+                onclick: function () {
+                    stage.autoView(1000)
+                }
+            }, { top: "108px", left: "12px" })
+            addElement(centerButton, stage)
+
+            // loadStructure("data://3SN6.cif", stage)
+
+            window.addEventListener("resize", function (event) {
+                stage.handleResize();
+            }, false);
+
+            function defaultStructureRepresentation(component, position = this.position) {
                 // bail out if the component does not contain a structure
-                if (component.type !== "structure") return;
-                // add three representations
-                // component.addRepresentation("cartoon", {
-                //     aspectRatio: 3.0,
-                //     scale: 1.5
+                // if (this.position == "") return;
+                // component.addRepresentation("ball+stick", {
+                //     sele: "all",
+                //     scale: 1,
+                //     colorScheme: schemeId,
                 // });
-                component.addRepresentation("spacefill", {
+                // component.autoView();
+
+                if (component.type !== "structure") return;
+                component.addRepresentation("ball+stick", {
                     sele: "all",
-                    scale: 0.1,
-                    colorScheme: "atomindex",
-                });
-                component.addRepresentation("spacefill", {
-                    sele: "acidic",
-                    scale: 0.5
-                });
-                component.addRepresentation("spacefill", {
-                    sele: "[ALA]",
                     scale: 1,
-                    color: schemeId2,
+                    colorScheme: schemeId,
                 });
+                component.addRepresentation("ball+stick", {
+                    sele: position,
+                    scale: 3,
+                    opacity: 0.5,
+                    color: schemeId1,
+                });
+                component.addRepresentation("ball+stick", {
+                    sele: position,
+                    scale: 1,
+                    color: schemeId1,
+                })
+                component.autoView(this.position, 2000);
             };
             stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation);
+
+            // Create tool
+            var tooltip = document.createElement("div");
+            Object.assign(tooltip.style, {
+                display: "none",
+                position: "relative",
+                zIndex: 10,
+                pointerEvents: "none",
+                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                color: "lightgrey",
+                padding: "0.5em",
+                fontFamily: "sans-serif"
+            });
+            stage.viewer.container.appendChild(tooltip);
+            stage.signals.clicked.add(function (pickingProxy) {
+                if (pickingProxy && (pickingProxy.atom || pickingProxy.bond)) {
+                    var atom = pickingProxy.atom || pickingProxy.closestBondAtom;
+                    var cp = pickingProxy.canvasPosition;
+                    tooltip.innerText = "ATOM: " + atom.qualifiedName();
+                    tooltip.style.bottom = cp.y + 3 + "px";
+                    tooltip.style.left = cp.x + 3 + "px";
+                    tooltip.style.display = "block";
+                } else {
+                    tooltip.style.display = "none";
+                }
+            });
+            // stage.setSpin(true);
+            stage.handleResize();
+            // stage.autoView();
         });
+
     </script>
-    <div id="viewport" style="width:400px; height:300px;"></div>
+    <div id="viewport" style="width: 100%; height: 400px;"></div>
 </body>
 
 </html>
