@@ -11,14 +11,18 @@
 
     <script>
 
+        // Variables
+        this.position = "1"
+
+        this.representation = "licorice"
+
+
         // Scheme used
         var schemeId = NGL.ColormakerRegistry.addSelectionScheme([
             [0xFF0000, "*"]], "Transmembrane 3dqb");
         var schemeId1 = NGL.ColormakerRegistry.addSelectionScheme([
             [0x0000FF, "*"]], "green");
 
-        // Variables
-        this.position = "1"
 
         // Fonctions
         function choose_position(value) {
@@ -93,7 +97,7 @@
                 onchange: function (e) {
                     choose_position(e.target.value)
                     stage.removeAllComponents()
-                    stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation)
+                    stage.loadFile("rcsb://1crn").then(structure_representation)
                 }
             }, { top: "36px", left: "12px" })
             addElement(AAselect, stage)
@@ -112,7 +116,7 @@
                     if (value != "") {
                         choose_position(e.target.value)
                         stage.removeAllComponents()
-                        stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation)
+                        stage.loadFile("rcsb://1crn").then(structure_representation)
                     }
                 }
             }, { top: "350px", left: "12px", width: "120px" })
@@ -133,36 +137,28 @@
                 stage.handleResize();
             }, false);
 
-            function defaultStructureRepresentation(component, position = this.position) {
+            function structure_representation(component, position = this.position, representation = this.representation) {
                 // bail out if the component does not contain a structure
-                // if (this.position == "") return;
-                // component.addRepresentation("ball+stick", {
-                //     sele: "all",
-                //     scale: 1,
-                //     colorScheme: schemeId,
-                // });
-                // component.autoView();
-
                 if (component.type !== "structure") return;
-                component.addRepresentation("ball+stick", {
+                component.addRepresentation(representation, {
                     sele: "all",
                     scale: 1,
                     colorScheme: schemeId,
                 });
-                component.addRepresentation("ball+stick", {
+                component.addRepresentation(representation, {
                     sele: position,
                     scale: 3,
                     opacity: 0.5,
                     color: schemeId1,
                 });
-                component.addRepresentation("ball+stick", {
+                component.addRepresentation(representation, {
                     sele: position,
                     scale: 1,
                     color: schemeId1,
                 })
-                component.autoView(this.position, 2000);
+                component.autoView(position, 2000);
             };
-            stage.loadFile("rcsb://1crn").then(defaultStructureRepresentation);
+            stage.loadFile("rcsb://1crn").then(structure_representation);
 
             // Create tool
             var tooltip = document.createElement("div");

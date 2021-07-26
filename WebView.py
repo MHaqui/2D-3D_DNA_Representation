@@ -7,9 +7,6 @@ from PySide2.QtCore import *
 from PySide2.QtWebEngineWidgets import *
 import os
 
-# from ..Domain_checking import js
-# from . import ngl as NGL
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
